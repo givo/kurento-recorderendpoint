@@ -2,17 +2,23 @@
 
 ## Introduction
 
-This is a `Node.js` example which creates a `RtpEndpoint` to `WebRtcEndpoint` pipeline in `Kurento` media server. 
+This is a `Node.js` example which creates a `RtpEndpoint` to `RecorderEndpoint` and to `WebRtcEndpoint` pipeline in `Kurento` media server. 
 
 In this example a we used `Haivision Makito` to capture a monitor and watching the live stream on a simple web page.
 
-We successfuly connected `Kurento` to Maktio using `Direct RTP` and `QuickTime`.
+We managed to successfuly connect `Kurento` to Maktio using `Direct RTP` and `QuickTime`.
 
-`Kureto` is deployed on Ubuntu 14.04 virtual machine
+`Kureto` is deployed on Ubuntu 14.04 virtual machine.
+
+## Recording
+
+In order to record, you have to provide a proper `recordingParams` which match the actual stream properties on `RecorderEndpoint` creation and a propert connection type when connecting endpoint , for example:
+ * if the stream contains only video track - use `{ mediaProfile: 'MP4_ONLY_VIDEO' }` and `VIDEO` parameter when connecting the `RecorderEndpoint`
+ * if the stream contains only audio track - use `{ mediaProfile: 'MP4_ONLY_AUDIO' }` and `AUDIO` parameter when connecting the `RecorderEndpoint`
 
 ## Improtant Notes
-
-* In order for this example to work you need to reconfigure in runtime (just after receiving the sdp answer) to use the udp port which `kurento` accepts in the sdp answer.
+ 
+* In order for this example to work you need to configure, in runtime, (just after receiving the sdp answer) to use the udp port which `kurento` accepts in the sdp answer.
 
 * Your `Ubuntu` machine which runs `Kurento` have to have `openh264` and package from Cisco installed.
 
