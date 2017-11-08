@@ -1,4 +1,4 @@
-# Rtp Endpoint Example
+# RtpEndpoint -> RecorderEndpoint Example
 
 ## Introduction
 
