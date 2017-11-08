@@ -93,7 +93,7 @@ class KurentoClient{
                 });
             },
             //
-            // create a WebRtcEndpoint 
+            // create WebRtcEndpoint 
             //
             (pipeline, callback) => {
                 pipeline.create('WebRtcEndpoint', function (err, webRtcEndpoint) {
@@ -117,17 +117,11 @@ class KurentoClient{
 
                     console.log('successfully created WebRtcEndpoint');
 
-                    // create session
-                    self.sessions[sessionId] = {
-                        pipeline: pipeline,
-                        webRtcEndpoint: webRtcEndpoint
-                    }
-
                     callback(null, pipeline, webRtcEndpoint);
                 });
             },
             //
-            // create a rtpEndpoint 
+            // create rtpEndpoint 
             //
             (pipeline, webRtcEndpoint, callback) => {
                 pipeline.create('RtpEndpoint', (err, rtpEndpoint) => {
@@ -137,27 +131,65 @@ class KurentoClient{
                         callback(err);
                     }
 
-                    //
-                    // listenning to media flow states
-                    //
-                    rtpEndpoint.on('MediaFlowInStateChange', function(event){
-                        console.log('Rtp flow IN:\n');
-                        console.log(event);
-                    });
-                    rtpEndpoint.on('MediaFlowOutStateChange', function(event){
-                        console.log('Rtp flow OUT:\n');
-                        console.log(event);
-                    });
-
                     console.log('successfully create rtpEndpoint');
 
                     callback(null, pipeline, rtpEndpoint, webRtcEndpoint);
                 });
             },
             //
-            // process encoder sdp
+            // create recorder
             //
             (pipeline, rtpEndpoint, webRtcEndpoint, callback) => {
+                pipeline.create('RecorderEndpoint', { uri: "file:///home/matan/test/test.mp4", mediaProfile: 'MP4_VIDEO_ONLY' }, (err, recorderEndpoint) => {
+                    if(err){
+                        console.error(err);
+                        pipeline.release();
+                        callback(err);
+                    }
+
+                    // create session
+                    self.sessions[sessionId] = {
+                        pipeline: pipeline,
+                        webRtcEndpoint: webRtcEndpoint,
+                        recorderEndpoint: recorderEndpoint
+                    }
+
+                    recorderEndpoint.on('Recording', function(event){                        
+                        console.log(event);
+                    });
+
+                    recorderEndpoint.on('Stopped', function(event){                        
+                        console.log(event);
+                    });
+
+                    recorderEndpoint.on('MediaFlowInStateChange', function(event){
+                        console.log('Recorder flow IN:\n');
+                        console.log(event);
+
+                        if(event.state == 'NOT_FLOWING'){
+                            console.log('stop recording');                            
+                            recorderEndpoint.stopAndWait((stopErr) => {
+                                if(stopErr){
+                                    console.error(stopErr);
+                                }
+                                console.log('recording stopped');
+                            });
+                        }
+                    });
+                    recorderEndpoint.on('MediaFlowOutStateChange', function(event){
+                        console.log('Recorder flow OUT:\n');
+                        console.log(event);
+                    });
+
+                    console.log('successfuly created RecorderEndpoint');
+
+                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint);
+                });
+            },
+            //
+            // process encoder sdp
+            //
+            (pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint, callback) => {
                 rtpEndpoint.setMaxVideoRecvBandwidth(1000);
 
                 rtpEndpoint.processOffer(encoderSdpRequest, (err, sdpAnswer) => {
@@ -169,6 +201,33 @@ class KurentoClient{
 
                     console.log(`successfully process sdp from encoder \n\n${sdpAnswer}`);
 
+                    //
+                    // listenning to RTP media flow states
+                    //
+                    rtpEndpoint.on('MediaFlowInStateChange', function(event){
+                        console.log('Rtp flow IN:\n');
+                        console.log(event);
+                    });
+                    rtpEndpoint.on('MediaFlowOutStateChange', function(event){
+                        console.log('Rtp flow OUT:\n');
+                        console.log(event);
+
+                        if(event.state == "FLOWING"){
+                            //
+                            // start recording
+                            //                        
+                            recorderEndpoint.record((err) => {
+                                if (err) {
+                                    console.error('error when trying to record');
+                                    pipeline.release();
+                                    callback(err);
+                                }
+            
+                                console.log('recording started');
+                            });
+                        }
+                    });
+
                     rtpEndpoint.getConnectionState(function encoderStateChanged(err, state) {
                         if (err) {
                             console.error(err);
@@ -177,13 +236,13 @@ class KurentoClient{
                         console.log(`encoder connection state: ${state}`);
                     });
 
-                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint);
+                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint);
                 });
-            },                
+            },      
             //
             // process client sdp offer 
             //
-            (pipeline, rtpEndpoint, webRtcEndpoint, callback) => {
+            (pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint, callback) => {
                 webRtcEndpoint.processOffer(sdpOffer, function(err, sdpAnswer){
                     if(err){
                         console.error('error at processOffer');
@@ -195,13 +254,13 @@ class KurentoClient{
 
                     cb(null, sdpAnswer);
 
-                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint);
+                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint);
                 });
             },
             //
             // get waiting candidates from FIFO
             //
-            (pipeline, rtpEndpoint, webRtcEndpoint, callback) => {   
+            (pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint, callback) => {   
                 
                 console.log(`fifo ${self.iceCandidateFIFO[sessionId].length}`);
 
@@ -237,13 +296,13 @@ class KurentoClient{
 
                     console.log(`finish loop ${res}`);
 
-                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint);
+                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint);
                 });
             },  
             //
             // gather ice candidates
             //
-            (pipeline, rtpEndpoint, webRtcEndpoint, callback) => {
+            (pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint, callback) => {
                 // when kurento gets his iceCandidate, send it to the client 
                 webRtcEndpoint.on('OnIceCandidate', function(event){
                     console.log('kurento generated ice candidate');
@@ -266,13 +325,29 @@ class KurentoClient{
 
                     console.log('started gathering ice candidates');
 
-                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint);
+                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint);
                 });
-            }, 
+            },
+            //
+            // connect RtpEndpoint to RecorderEndpoint
+            //   
+            (pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint, callback) =>{
+                rtpEndpoint.connect(recorderEndpoint, 'VIDEO', function (connectRecorderErr) {
+                    if (connectRecorderErr) {
+                        console.error('error at create connect');
+                        pipeline.release();
+                        callback(connectRecorderErr);
+                    }
+
+                    console.log('successfully connected recorder');
+
+                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint);
+                });
+            },
             //
             // connect the rtpEndpoint and WebRtcEndpoint and start media session pipeline
             //
-            (pipeline, rtpEndpoint, webRtcEndpoint, callback) => {
+            (pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint, callback) => {
                 rtpEndpoint.connect(webRtcEndpoint, function (err) {
                     if (err) {
                         console.error('error at create connect');
@@ -282,9 +357,9 @@ class KurentoClient{
 
                     console.log('successfully connected endpoints');
 
-                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint);
+                    callback(null, pipeline, rtpEndpoint, webRtcEndpoint, recorderEndpoint);
                 });
-            }
+            }, 
         ], (err, result) => {
             if(err){
                 cb(err);
@@ -296,6 +371,15 @@ class KurentoClient{
 
     destroyPipeline(sessionId){
         if(this.sessions[sessionId]){
+            console.log('destroying pipeline');
+
+            this.sessions[sessionId].recorderEndpoint.stopAndWait((err)=>{
+                if(err){
+                    console.error(err);
+                }
+
+                console.log('finished recording');
+            });
             this.sessions[sessionId].pipeline.release();
 
             delete this.sessions[sessionId];
