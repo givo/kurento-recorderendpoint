@@ -26,11 +26,16 @@ In order to record, you have to:
 
 * Make sure to call `recorderEndpoint.record()` only when you are sure video has started. Use `MediaFlowInStateChange`.
  
-* provide a proper `recordingParams` which match the actual stream properties on `RecorderEndpoint` creation and a proper connection type when connecting the recorder endpoint, for example:
+* Provide a proper `recordingParams` which match the actual stream properties on `RecorderEndpoint` creation and a proper connection type when connecting the recorder endpoint, for example:
  
  * If the stream contains only video track - use `{ mediaProfile: 'MP4_ONLY_VIDEO' }` and `VIDEO` parameter when connecting the `RecorderEndpoint`
 
  * If the stream contains only audio track - use `{ mediaProfile: 'MP4_ONLY_AUDIO' }` and `AUDIO` parameter when connecting the `RecorderEndpoint`
+
+* In order to record on a a shared directory (NAS), mount the share on the ubuntu machine using:
+
+ * Install `cifs-utils`
+ * `mount -t cifs -o username=<nas_user>,password=<nas_user_password> //<nas>/<share> /media/<share>`
 
 ## Improtant Notes
  
