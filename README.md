@@ -12,9 +12,25 @@ We managed to successfuly connect `Kurento` to Maktio using `Direct RTP` and `Qu
 
 ## Recording
 
-In order to record, you have to provide a proper `recordingParams` which match the actual stream properties on `RecorderEndpoint` creation and a propert connection type when connecting endpoint , for example:
- * if the stream contains only video track - use `{ mediaProfile: 'MP4_ONLY_VIDEO' }` and `VIDEO` parameter when connecting the `RecorderEndpoint`
- * if the stream contains only audio track - use `{ mediaProfile: 'MP4_ONLY_AUDIO' }` and `AUDIO` parameter when connecting the `RecorderEndpoint`
+In order to record, you have to:
+
+* Have write permission to the directory you chose to write to:
+
+> In linux:
+
+>> `sudo chmod 777 <directory>` 
+
+>> or
+
+>> `sudo chmod kurento:kurento <directory>` then `sudo chmod u+w,g+w <directory>`
+
+* Make sure to call `recorderEndpoint.record()` only when you are sure video has started. Use `MediaFlowInStateChange`.
+ 
+* provide a proper `recordingParams` which match the actual stream properties on `RecorderEndpoint` creation and a proper connection type when connecting the recorder endpoint, for example:
+ 
+ * If the stream contains only video track - use `{ mediaProfile: 'MP4_ONLY_VIDEO' }` and `VIDEO` parameter when connecting the `RecorderEndpoint`
+
+ * If the stream contains only audio track - use `{ mediaProfile: 'MP4_ONLY_AUDIO' }` and `AUDIO` parameter when connecting the `RecorderEndpoint`
 
 ## Improtant Notes
  
