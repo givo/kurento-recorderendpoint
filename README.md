@@ -16,13 +16,15 @@ In order to record, you have to:
 
 * Have write permission to the directory you chose to write to:
 
-> In linux:
+```
+sudo chmod 777 <directory>`
+```
 
->> `sudo chmod 777 <directory>` 
+or
 
->> or
-
->> `sudo chmod kurento:kurento <directory>` then `sudo chmod u+w,g+w <directory>`
+```
+sudo chmod kurento:kurento <directory>` then `sudo chmod u+w,g+w <directory>
+```
 
 * Make sure to call `recorderEndpoint.record()` only when you are sure video has started. Use `MediaFlowInStateChange`.
  
