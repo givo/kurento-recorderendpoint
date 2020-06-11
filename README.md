@@ -1,5 +1,7 @@
 # RtpEndpoint -> RecorderEndpoint Example
 
+have created a library for simplifing the use of kurento-client I recommend you to take a look [lib-kurento](https://github.com/givo/lib-kurento)
+
 ## Introduction
 
 This is a `Node.js` example which creates a `RtpEndpoint` to `RecorderEndpoint` and to `WebRtcEndpoint` pipeline in `Kurento` media server. 
